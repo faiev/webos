@@ -16,11 +16,10 @@ All runtime dependencies are published under the Pages site:
 
 - assets/v86/libv86.js
 - assets/v86/v86.wasm
-- assets/v86/bios/
 - os/bzImage
 - os/rootfs.cpio.gz
 
-The workflow checks out v86 at a pinned commit and builds its browser library. It downloads the pinned stable Buildroot release, applies the WebOS external-tree configuration, builds the kernel and initramfs, then copies the resulting resources into the Pages artifact.
+The workflow checks out v86 at a pinned commit and builds its browser library. It downloads the pinned stable Buildroot release, applies the WebOS external-tree configuration, builds the kernel and initramfs, boots that guest under QEMU until the WebOS userspace marker is observed, collects Buildroot legal information, then assembles the static Pages artifact.
 
 Relative URLs are used so the site can work at a project URL such as /webos/, not only at a domain root.
 
@@ -42,7 +41,7 @@ The guest runs inside an emulator in the browser and does not receive native hos
 
 ## Future milestones
 
-1. Confirm repeatable boot and interactive shell in supported browsers.
-2. Add browser integration tests that confirm the guest boot marker and execute a harmless shell command through the serial console.
+1. Add browser integration tests that boot the deployed v86 build and confirm the guest boot marker.
+2. Execute a harmless shell command through the guest serial console as an automated interaction test.
 3. Evaluate a small graphical environment only after the shell build is reliable.
 4. Consider guest networking and persistent virtual storage as separate, testable features.
