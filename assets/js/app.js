@@ -151,7 +151,7 @@
       return;
     }
     if (typeof window.V86 !== "function") {
-      showError("The v86 runtime was not loaded. Refresh the page and check that the emulator assets were published by GitHub Actions.");
+      showError("The v64 runtime was not loaded. Refresh the page and check that the emulator assets were published by GitHub Actions.");
       return;
     }
 
@@ -160,18 +160,20 @@
       booted = false;
       document.documentElement.dataset.guestBooted = "false";
       machine = new window.V86({
-        wasm_path: asset("assets/v86/v86.wasm"),
-        memory_size: 128 * 1024 * 1024,
-        vga_memory_size: 8 * 1024 * 1024,
-        bios: { url: asset("assets/v86/bios/seabios.bin") },
-        vga_bios: { url: asset("assets/v86/bios/vgabios.bin") },
+        wasm_path: asset("assets/v64/v86.wasm"),
+        cpu_type: "x86_64",
+        cpu_features: "x86-64-v1",
+        cpu_cores: 1,
+        acpi: true,
+        graphics_adapter: "bochs_vga",
+        memory_size: 512 * 1024 * 1024,
+        vram_size: 8 * 1024 * 1024,
+        bios: { url: asset("assets/v64/bios/seabios.bin") },
+        vga_bios: { url: asset("assets/v64/bios/vgabios.bin") },
         bzimage: { url: asset("os/bzImage") },
         initrd: { url: asset("os/rootfs.cpio.gz") },
         cmdline: "console=tty0 console=ttyS0,115200n8 rdinit=/sbin/init loglevel=4",
-        screen: {
-          container: screenContainer,
-          use_graphical_text: false
-        },
+        screen_container: screenContainer,
         autostart: true
       });
 
@@ -199,7 +201,7 @@
       machine.add_listener("download-error", function (details) {
         showError("A required emulator or Linux resource could not be downloaded: " +
           (details && details.file_name ? details.file_name : "unknown file") +
-          ". Check that the Pages build published the kernel, initramfs, and v86 assets.");
+          ". Check that the Pages build published the kernel, initramfs, and v64 assets.");
       });
     } catch (error) {
       showError("Could not initialize the virtual computer: " + (error && error.message ? error.message : String(error)));

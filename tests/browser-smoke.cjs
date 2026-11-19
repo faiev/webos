@@ -10,6 +10,7 @@ async function waitForGuestBoot(page, timeout) {
     { timeout }
   );
   const serial = await page.evaluate(() => window.WebOS.serialOutput);
+  assert.ok(serial.includes("Architecture: x86_64"), "The guest did not boot a 64-bit x86_64 Linux userspace.");
   assert.ok(serial.includes("WEBOS_BOOT_COMPLETE"), "The guest serial console did not emit the WebOS boot marker.");
 }
 
@@ -26,7 +27,7 @@ async function waitForGuestBoot(page, timeout) {
 
     await page.goto("http://127.0.0.1:8765/", { waitUntil: "domcontentloaded" });
     await page.locator("#start-button").click();
-    await waitForGuestBoot(page, 180000);
+    await waitForGuestBoot(page, 240000);
 
     await page.locator("#pause-button").click();
     await page.waitForFunction(
@@ -43,10 +44,10 @@ async function waitForGuestBoot(page, timeout) {
     );
 
     await page.locator("#restart-button").click();
-    await waitForGuestBoot(page, 90000);
+    await waitForGuestBoot(page, 120000);
 
     assert.deepEqual(pageErrors, [], "The WebOS page raised browser JavaScript errors.");
-    console.log("PASS: WebAssembly loaded, v86 booted Linux, userspace started, pause/resume worked, and restart booted again.");
+    console.log("PASS: v64 booted x86-64 Linux, userspace started, pause/resume worked, and restart booted again.");
   } finally {
     await browser.close();
   }

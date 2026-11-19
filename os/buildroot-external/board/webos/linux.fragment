@@ -18,5 +18,5 @@ CONFIG_NE2K_PCI=y
 CONFIG_INPUT=y
 CONFIG_KEYBOARD_ATKBD=y
 CONFIG_MOUSE_PS2=y
-# v86 currently emulates a single CPU core.
+# WebOS currently configures one v64 virtual CPU core.
 # CONFIG_SMP is not set

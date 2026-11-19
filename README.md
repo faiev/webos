@@ -4,13 +4,13 @@
 
 WebOS is a small Linux distribution that boots in a browser tab. GitHub Pages serves the static application, WebAssembly emulator, Linux kernel, and root filesystem. The computer itself is emulated locally in the visitor's browser.
 
-This is not a terminal simulator: the intended runtime boots a real 32-bit x86 Linux kernel with a BusyBox userspace.
+This is not a terminal simulator: the runtime boots a real 64-bit x86-64 Linux kernel with a 64-bit BusyBox userspace.
 
 ## How it works
 
 1. The WebOS interface loads from GitHub Pages.
-2. The pinned v86 emulator loads its WebAssembly CPU engine.
-3. v86 emulates an x86 PC and its basic devices inside the browser.
+2. The pinned v64 emulator loads its WebAssembly CPU engine.
+3. v64 emulates an x86-64 PC in long mode, including 64-bit registers and paging.
 4. The Linux kernel boots with a Buildroot-generated compressed initramfs.
 5. BusyBox starts the WebOS shell on the virtual VGA and serial consoles.
 
@@ -18,7 +18,11 @@ The browser does the emulation. No WebOS backend or remote virtual machine is re
 
 ## Hardware target
 
-The first release targets **32-bit x86 (i386/Pentium Pro class)**. The official v86 emulator documents that 64-bit Linux kernels are not supported, so this is a deliberate compatibility choice rather than an arbitrary limitation.
+The release targets **64-bit x86-64 (AMD64)**. The browser uses v64, an actively maintained v86-derived emulator with x86-64 long-mode support and verified 64-bit Linux boots.
+
+Buildroot produces an x86-64 kernel and 64-bit BusyBox/musl userspace. CI verifies the kernel's CONFIG_64BIT and CONFIG_X86_64 settings, checks that BusyBox is an ELF 64-bit executable, and checks that the guest reports x86_64 from uname -m.
+
+The browser machine uses one x86-64 virtual CPU and 512 MiB of RAM. v64 currently limits guest physical RAM to 4 GiB because of its wasm32 memory model; this does not change the guest's 64-bit architecture.
 
 The system currently focuses on a bootable Linux shell. A graphical desktop, guest networking, and richer file persistence are future work and must not be presented as available until implemented and tested.
 
@@ -41,7 +45,7 @@ Generated binaries are intentionally not committed to the source tree. GitHub Ac
 4. Run the **Build and deploy WebOS** workflow, or push a commit to main.
 5. Open the Pages URL after the workflow completes successfully.
 
-The first build compiles v86 and Buildroot, so it takes longer than a normal static-site deployment. Before publishing, the workflow boots the generated kernel and initramfs under QEMU, then launches the assembled Pages site in headless Chromium. The browser test verifies that v86 boots the real Linux userspace and that pause, resume, and restart work. The workflow must complete successfully before the OS assets are available on Pages.
+The first build builds v64 and Buildroot, so it takes longer than a normal static-site deployment. Before publishing, the workflow boots the generated kernel and initramfs under QEMU, then launches the assembled Pages site in headless Chromium. The browser test verifies that v64 boots the real x86-64 Linux userspace and that pause, resume, and restart work. The workflow must complete successfully before the OS assets are available on Pages.
 
 ## Local development
 
@@ -69,14 +73,14 @@ A saved machine state is a local browser snapshot. It is not cloud storage, and 
 ## Build versions
 
 - Buildroot: 2026.08.2 stable release.
-- v86: pinned to commit 315b2b0b758703ef0e6cc7b4088d6068f83f3c20.
+- v64: pinned to commit 6448e1f3e6140684d1294aba67e91f46e924b3f3.
 - Linux kernel: selected through the pinned Buildroot configuration.
 
 The generated site includes build metadata so the exact source revisions can be identified.
 
 ## Important limitations
 
-- This is an emulated 32-bit x86 PC, not a native host operating system.
+- This is an emulated x86-64 Linux PC, not a native host operating system.
 - Performance depends on the visitor's browser, CPU, and available memory.
 - Guest networking is not enabled in the initial configuration.
 - The first boot downloads the emulator and Linux images; browser caching may make later launches faster.
@@ -85,4 +89,4 @@ The generated site includes build metadata so the exact source revisions can be 
 
 ## Licensing
 
-WebOS configuration and application files are maintained in this repository. The build also includes third-party components with their own licenses, including Linux, Buildroot, BusyBox, and v86. See CREDITS.md and the licenses distributed with their source projects before redistributing modified builds.
+WebOS configuration and application files are maintained in this repository. The build also includes third-party components with their own licenses, including Linux, Buildroot, BusyBox, and v64. See CREDITS.md and the licenses distributed with their source projects before redistributing modified builds.

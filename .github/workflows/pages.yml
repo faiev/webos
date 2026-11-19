@@ -17,6 +17,10 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    env:
+      BUILDROOT_SRC: /tmp/buildroot-src
+      BUILDROOT_OUT: /tmp/buildroot-output
+      WEBOS_EXTERNAL: ${{ github.workspace }}/os/buildroot-external
     steps:
       - name: Check out WebOS
         uses: actions/checkout@v4
@@ -25,7 +29,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential clang lld llvm make git curl wget \
-            xz-utils bc bison flex cpio rsync unzip file python3 perl gawk patch qemu-system-x86 \
+            xz-utils bc bison flex cpio rsync unzip file python3 perl gawk patch nasm qemu-system-x86 \
             libncurses-dev libssl-dev libelf-dev
 
       - name: Set up Java
@@ -44,54 +48,57 @@ jobs:
         with:
           targets: wasm32-unknown-unknown
 
-      - name: Check out pinned v86 source
+      - name: Check out pinned v64 source
         uses: actions/checkout@v4
         with:
-          repository: copy/v86
-          ref: 315b2b0b758703ef0e6cc7b4088d6068f83f3c20
-          path: vendor/v86
+          repository: speedyHKjournalist/v64
+          ref: 6448e1f3e6140684d1294aba67e91f46e924b3f3
+          path: vendor/v64
 
-      - name: Build v86 browser runtime
+      - name: Build v64 browser runtime
         run: |
-          make -C vendor/v86 -j2 all
-          mkdir -p _site/assets/v86/bios
-          cp vendor/v86/build/libv86.js _site/assets/v86/libv86.js
-          cp vendor/v86/build/v86.wasm _site/assets/v86/v86.wasm
-          cp vendor/v86/bios/seabios.bin _site/assets/v86/bios/seabios.bin
-          cp vendor/v86/bios/vgabios.bin _site/assets/v86/bios/vgabios.bin
-          cp vendor/v86/LICENSE _site/assets/v86/LICENSE
+          make -C vendor/v64 -j2 all
+          mkdir -p _site/assets/v64/bios
+          cp vendor/v64/build/libv86.js _site/assets/v64/libv86.js
+          cp vendor/v64/build/v86.wasm _site/assets/v64/v86.wasm
+          cp vendor/v64/bios/seabios.bin _site/assets/v64/bios/seabios.bin
+          cp vendor/v64/bios/vgabios.bin _site/assets/v64/bios/vgabios.bin
+          cp vendor/v64/LICENSE _site/assets/v64/LICENSE
+          test -s _site/assets/v64/libv86.js
+          test -s _site/assets/v64/v86.wasm
 
       - name: Download pinned Buildroot release
         run: |
           curl --fail --location --retry 3 \
             https://buildroot.org/downloads/buildroot-2026.08.2.tar.xz \
             --output /tmp/buildroot.tar.xz
-          mkdir -p /tmp/buildroot-src
-          tar -xJf /tmp/buildroot.tar.xz -C /tmp/buildroot-src --strip-components=1
+          mkdir -p "$BUILDROOT_SRC"
+          tar -xJf /tmp/buildroot.tar.xz -C "$BUILDROOT_SRC" --strip-components=1
 
-      - name: Configure and build WebOS Linux
-        env:
-          BUILDROOT_SRC: /tmp/buildroot-src
-          BUILDROOT_OUT: /tmp/buildroot-output
-          WEBOS_EXTERNAL: ${{ github.workspace }}/os/buildroot-external
+      - name: Configure and build 64-bit WebOS Linux
         run: |
           make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" BR2_EXTERNAL="$WEBOS_EXTERNAL" webos_defconfig
           make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" BR2_EXTERNAL="$WEBOS_EXTERNAL" olddefconfig
+          grep -qx 'BR2_x86_64=y' "$BUILDROOT_OUT/.config"
+          grep -qx 'BR2_x86_x86_64=y' "$BUILDROOT_OUT/.config"
           make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" BR2_EXTERNAL="$WEBOS_EXTERNAL" -j"$(nproc)"
           test -s "$BUILDROOT_OUT/images/bzImage"
           test -s "$BUILDROOT_OUT/images/rootfs.cpio.gz"
+          grep -qx 'CONFIG_64BIT=y' "$BUILDROOT_OUT/build/linux-6.18.7/.config"
+          grep -qx 'CONFIG_X86_64=y' "$BUILDROOT_OUT/build/linux-6.18.7/.config"
+          file "$BUILDROOT_OUT/target/bin/busybox" | grep -q 'ELF 64-bit'
           mkdir -p _site/os
           cp "$BUILDROOT_OUT/images/bzImage" _site/os/bzImage
           cp "$BUILDROOT_OUT/images/rootfs.cpio.gz" _site/os/rootfs.cpio.gz
 
-      - name: Boot-check Linux and BusyBox in QEMU
+      - name: Boot-check x86-64 Linux and BusyBox in QEMU
         run: |
           set +e
-          timeout --signal=TERM 45s qemu-system-i386 \
-            -machine pc -cpu pentiumpro -m 128M \
+          timeout --signal=TERM 60s qemu-system-x86_64 \
+            -machine pc -cpu qemu64 -m 512M -smp 1 \
             -kernel "$BUILDROOT_OUT/images/bzImage" \
             -initrd "$BUILDROOT_OUT/images/rootfs.cpio.gz" \
-            -append "console=ttyS0,115200n8 rdinit=/sbin/init loglevel=4" \
+            -append "console=tty0 console=ttyS0,115200n8 rdinit=/sbin/init loglevel=4" \
             -display none -serial stdio -monitor none -no-reboot \
             > /tmp/webos-boot.log 2>&1
           qemu_status=$?
@@ -100,12 +107,17 @@ jobs:
             cat /tmp/webos-boot.log
             exit "$qemu_status"
           fi
+          if ! grep -Fq "Architecture: x86_64" /tmp/webos-boot.log; then
+            cat /tmp/webos-boot.log
+            echo "The Linux guest did not report the x86_64 architecture."
+            exit 1
+          fi
           if ! grep -Fq "WEBOS_BOOT_COMPLETE" /tmp/webos-boot.log; then
             cat /tmp/webos-boot.log
             echo "Linux did not reach the WebOS userspace boot marker."
             exit 1
           fi
-          echo "Verified: the Linux kernel booted and WebOS userspace started."
+          echo "Verified: x86_64 Linux kernel and 64-bit BusyBox userspace booted."
 
       - name: Collect Buildroot legal information
         run: |
@@ -120,22 +132,24 @@ jobs:
           mkdir -p _site/docs
           cp docs/ARCHITECTURE.md _site/docs/ARCHITECTURE.md
           cp CREDITS.md _site/CREDITS.md
-          printf '%s\n' \
+          printf '%s\\n' \
             '{' \
             '  "buildroot": "2026.08.2",' \
-            '  "v86Commit": "315b2b0b758703ef0e6cc7b4088d6068f83f3c20",' \
-            '  "architecture": "i386",' \
+            '  "emulator": "v64",' \
+            '  "v64Commit": "6448e1f3e6140684d1294aba67e91f46e924b3f3",' \
+            '  "architecture": "x86_64",' \
+            '  "cpuProfile": "x86-64-v1",' \
             '  "kernel": "6.18.7"' \
             '}' > _site/build-info.json
           touch _site/.nojekyll
           test -s _site/index.html
-          test -s _site/assets/v86/libv86.js
-          test -s _site/assets/v86/v86.wasm
+          test -s _site/assets/v64/libv86.js
+          test -s _site/assets/v64/v86.wasm
           test -s _site/os/bzImage
           test -s _site/os/rootfs.cpio.gz
           du -sh _site
 
-      - name: Test WebOS boot in headless Chromium
+      - name: Test x86-64 WebOS boot in headless Chromium
         run: |
           npm install --no-audit --no-fund
           npx playwright install --with-deps chromium
