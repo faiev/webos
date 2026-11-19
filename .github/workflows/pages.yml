@@ -92,15 +92,15 @@ jobs:
           grep -qx 'BR2_x86_64=y' "$BUILDROOT_OUT/.config"
           grep -qx 'BR2_x86_x86_64=y' "$BUILDROOT_OUT/.config"
           make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" BR2_EXTERNAL="$WEBOS_EXTERNAL" -j"$(nproc)"
-          test -s "$BUILD_CACHE/os/bzImage"
-          test -s "$BUILD_CACHE/os/rootfs.cpio.gz"
+          test -s "$BUILDROOT_OUT/images/bzImage"
+          test -s "$BUILDROOT_OUT/images/rootfs.cpio.gz"
           grep -qx 'CONFIG_64BIT=y' "$BUILDROOT_OUT/build/linux-6.18.7/.config"
           grep -qx 'CONFIG_X86_64=y' "$BUILDROOT_OUT/build/linux-6.18.7/.config"
           file "$BUILDROOT_OUT/target/bin/busybox" | grep -q 'ELF 64-bit'
 
           mkdir -p "$BUILD_CACHE/os" "$BUILD_CACHE/licenses/buildroot"
-          cp "$BUILD_CACHE/os/bzImage" "$BUILD_CACHE/os/bzImage"
-          cp "$BUILD_CACHE/os/rootfs.cpio.gz" "$BUILD_CACHE/os/rootfs.cpio.gz"
+          cp "$BUILDROOT_OUT/images/bzImage" "$BUILD_CACHE/os/bzImage"
+          cp "$BUILDROOT_OUT/images/rootfs.cpio.gz" "$BUILD_CACHE/os/rootfs.cpio.gz"
           cp "$BUILDROOT_OUT/target/bin/busybox" "$BUILD_CACHE/busybox"
           make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" BR2_EXTERNAL="$WEBOS_EXTERNAL" legal-info
           cp -R "$BUILDROOT_OUT/legal-info/." "$BUILD_CACHE/licenses/buildroot/"
