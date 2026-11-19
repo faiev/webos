@@ -132,7 +132,7 @@ jobs:
           mkdir -p _site/docs
           cp docs/ARCHITECTURE.md _site/docs/ARCHITECTURE.md
           cp CREDITS.md _site/CREDITS.md
-          printf '%s\\n' \
+          printf '%s\n' \
             '{' \
             '  "buildroot": "2026.08.2",' \
             '  "emulator": "v64",' \

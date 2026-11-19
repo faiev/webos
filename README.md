@@ -1,6 +1,6 @@
 # WebOS
 
-**A real Linux system running inside your browser.**
+**A real 64-bit Linux system running inside your browser.**
 
 WebOS is a small Linux distribution that boots in a browser tab. GitHub Pages serves the static application, WebAssembly emulator, Linux kernel, and root filesystem. The computer itself is emulated locally in the visitor's browser.
 
@@ -74,7 +74,7 @@ A saved machine state is a local browser snapshot. It is not cloud storage, and 
 
 - Buildroot: 2026.08.2 stable release.
 - v64: pinned to commit 6448e1f3e6140684d1294aba67e91f46e924b3f3.
-- Linux kernel: selected through the pinned Buildroot configuration.
+- Linux kernel: 6.18.7, configured as x86-64.
 
 The generated site includes build metadata so the exact source revisions can be identified.
 
