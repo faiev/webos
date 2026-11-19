@@ -165,6 +165,11 @@ jobs:
           mkdir -p _site/docs
           cp docs/ARCHITECTURE.md _site/docs/ARCHITECTURE.md
           cp CREDITS.md _site/CREDITS.md
+          mkdir -p _site/os _site/licenses/buildroot
+          cp "$BUILD_CACHE/os/bzImage" _site/os/bzImage
+          cp "$BUILD_CACHE/os/rootfs.cpio.gz" _site/os/rootfs.cpio.gz
+          cp -R "$BUILD_CACHE/licenses/buildroot/." _site/licenses/buildroot/
+          cp "$BUILD_CACHE/build-info.txt" _site/linux-build-info.txt
           printf '%s\n' \
             '{' \
             '  "buildroot": "2026.08.2",' \
