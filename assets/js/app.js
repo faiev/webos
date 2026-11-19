@@ -180,6 +180,7 @@
       });
 
       machine.add_listener("emulator-started", function () {
+        screenWait.hidden = true;
         if (!booted) {
           setStatus("BOOTING", "Linux kernel is starting", "loading");
         }
