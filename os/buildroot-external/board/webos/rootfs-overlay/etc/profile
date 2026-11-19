@@ -1,0 +1,5 @@
+export HOSTNAME=webos
+export TERM=vt100
+export PS1='root@webos:\w# '
+alias ll='ls -alF'
+alias la='ls -A'
