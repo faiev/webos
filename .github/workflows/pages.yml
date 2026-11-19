@@ -21,6 +21,7 @@ jobs:
       BUILDROOT_SRC: /tmp/buildroot-src
       BUILDROOT_OUT: /tmp/buildroot-output
       WEBOS_EXTERNAL: ${{ github.workspace }}/os/buildroot-external
+      BUILD_CACHE: ${{ github.workspace }}/.build-cache/linux
     steps:
       - name: Check out WebOS
         uses: actions/checkout@v4
@@ -67,7 +68,15 @@ jobs:
           test -s _site/assets/v64/libv86.js
           test -s _site/assets/v64/v86.wasm
 
+      - name: Restore cached x86-64 Linux build
+        id: linux-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .build-cache/linux
+          key: webos-linux-x86_64-br2026.08.2-linux6.18.7-v1-${{ hashFiles('os/buildroot-external/**') }}
+
       - name: Download pinned Buildroot release
+        if: steps.linux-cache.outputs.cache-hit != 'true'
         run: |
           curl --fail --location --retry 3 \
             https://buildroot.org/downloads/buildroot-2026.08.2.tar.xz \
@@ -76,28 +85,58 @@ jobs:
           tar -xJf /tmp/buildroot.tar.xz -C "$BUILDROOT_SRC" --strip-components=1
 
       - name: Configure and build 64-bit WebOS Linux
+        if: steps.linux-cache.outputs.cache-hit != 'true'
         run: |
           make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" BR2_EXTERNAL="$WEBOS_EXTERNAL" webos_defconfig
           make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" BR2_EXTERNAL="$WEBOS_EXTERNAL" olddefconfig
           grep -qx 'BR2_x86_64=y' "$BUILDROOT_OUT/.config"
           grep -qx 'BR2_x86_x86_64=y' "$BUILDROOT_OUT/.config"
           make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" BR2_EXTERNAL="$WEBOS_EXTERNAL" -j"$(nproc)"
-          test -s "$BUILDROOT_OUT/images/bzImage"
-          test -s "$BUILDROOT_OUT/images/rootfs.cpio.gz"
+          test -s "$BUILD_CACHE/os/bzImage"
+          test -s "$BUILD_CACHE/os/rootfs.cpio.gz"
           grep -qx 'CONFIG_64BIT=y' "$BUILDROOT_OUT/build/linux-6.18.7/.config"
           grep -qx 'CONFIG_X86_64=y' "$BUILDROOT_OUT/build/linux-6.18.7/.config"
           file "$BUILDROOT_OUT/target/bin/busybox" | grep -q 'ELF 64-bit'
-          mkdir -p _site/os
-          cp "$BUILDROOT_OUT/images/bzImage" _site/os/bzImage
-          cp "$BUILDROOT_OUT/images/rootfs.cpio.gz" _site/os/rootfs.cpio.gz
+
+          mkdir -p "$BUILD_CACHE/os" "$BUILD_CACHE/licenses/buildroot"
+          cp "$BUILD_CACHE/os/bzImage" "$BUILD_CACHE/os/bzImage"
+          cp "$BUILD_CACHE/os/rootfs.cpio.gz" "$BUILD_CACHE/os/rootfs.cpio.gz"
+          cp "$BUILDROOT_OUT/target/bin/busybox" "$BUILD_CACHE/busybox"
+          make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" BR2_EXTERNAL="$WEBOS_EXTERNAL" legal-info
+          cp -R "$BUILDROOT_OUT/legal-info/." "$BUILD_CACHE/licenses/buildroot/"
+          printf '%s\\n' 'architecture=x86_64' 'buildroot=2026.08.2' 'kernel=6.18.7' > "$BUILD_CACHE/build-info.txt"
+
+      - name: Verify cached x86-64 Linux build
+        run: |
+          test -s "$BUILD_CACHE/os/bzImage"
+          test -s "$BUILD_CACHE/os/rootfs.cpio.gz"
+          test -s "$BUILD_CACHE/busybox"
+          test -s "$BUILD_CACHE/licenses/buildroot/manifest.csv"
+          file "$BUILD_CACHE/busybox" | grep -q 'ELF 64-bit'
+          cat "$BUILD_CACHE/build-info.txt"
+
+      - name: Save reusable x86-64 Linux build cache
+        if: steps.linux-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .build-cache/linux
+          key: webos-linux-x86_64-br2026.08.2-linux6.18.7-v1-${{ hashFiles('os/buildroot-external/**') }}
+
+      - name: Preserve compiled Linux files before tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: webos-linux-x86_64
+          path: .build-cache/linux/
+          if-no-files-found: error
+          retention-days: 90
 
       - name: Boot-check x86-64 Linux and BusyBox in QEMU
         run: |
           set +e
           timeout --signal=TERM 60s qemu-system-x86_64 \
             -machine pc -cpu qemu64 -m 512M -smp 1 \
-            -kernel "$BUILDROOT_OUT/images/bzImage" \
-            -initrd "$BUILDROOT_OUT/images/rootfs.cpio.gz" \
+            -kernel "$BUILD_CACHE/os/bzImage" \
+            -initrd "$BUILD_CACHE/os/rootfs.cpio.gz" \
             -append "console=tty0 console=ttyS0,115200n8 rdinit=/sbin/init loglevel=4" \
             -display none -serial stdio -monitor none -no-reboot \
             > /tmp/webos-boot.log 2>&1
@@ -118,12 +157,6 @@ jobs:
             exit 1
           fi
           echo "Verified: x86_64 Linux kernel and 64-bit BusyBox userspace booted."
-
-      - name: Collect Buildroot legal information
-        run: |
-          make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" BR2_EXTERNAL="$WEBOS_EXTERNAL" legal-info
-          mkdir -p _site/licenses/buildroot
-          cp -R "$BUILDROOT_OUT/legal-info/." _site/licenses/buildroot/
 
       - name: Assemble static Pages site
         run: |
