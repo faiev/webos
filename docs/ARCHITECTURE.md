@@ -19,7 +19,7 @@ All runtime dependencies are published under the Pages site:
 - os/bzImage
 - os/rootfs.cpio.gz
 
-The workflow checks out v86 at a pinned commit and builds its browser library. It downloads the pinned stable Buildroot release, applies the WebOS external-tree configuration, builds the kernel and initramfs, boots that guest under QEMU until the WebOS userspace marker is observed, collects Buildroot legal information, then assembles the static Pages artifact.
+The workflow checks out v86 at a pinned commit and builds its browser library. It downloads the pinned stable Buildroot release, applies the WebOS external-tree configuration, builds the kernel and initramfs, boots that guest under QEMU until the WebOS userspace marker is observed, collects Buildroot legal information, and assembles the static site. Before publishing, headless Chromium loads those exact static files, starts v86, waits for the Linux userspace marker, and exercises pause, resume, and restart.
 
 Relative URLs are used so the site can work at a project URL such as /webos/, not only at a domain root.
 
@@ -41,7 +41,6 @@ The guest runs inside an emulator in the browser and does not receive native hos
 
 ## Future milestones
 
-1. Add browser integration tests that boot the deployed v86 build and confirm the guest boot marker.
-2. Execute a harmless shell command through the guest serial console as an automated interaction test.
-3. Evaluate a small graphical environment only after the shell build is reliable.
-4. Consider guest networking and persistent virtual storage as separate, testable features.
+1. Extend browser tests to verify keyboard input and shell commands, not only boot and machine controls.
+2. Evaluate a small graphical environment only after the shell build is reliable.
+3. Consider guest networking and persistent virtual storage as separate, testable features.
