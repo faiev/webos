@@ -144,4 +144,4 @@ async function waitForGuestBoot(page, timeout, telemetry) {
 })().catch(error => {
   console.error(error);
   process.exitCode = 1;
-})();
+});
