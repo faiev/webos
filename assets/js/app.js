@@ -161,6 +161,8 @@
       document.documentElement.dataset.guestBooted = "false";
       machine = new window.V86({
         wasm_path: asset("assets/v64/v86.wasm"),
+        cpu_worker: true,
+        cpu_worker_url: asset("assets/v64/cpu-worker.js"),
         cpu_type: "x86_64",
         cpu_features: "x86-64-v1",
         cpu_cores: 1,
@@ -198,6 +200,11 @@
 
       machine.add_listener("serial0-output-byte", handleSerialByte);
       machine.add_listener("download-progress", handleDownloadProgress);
+      machine.add_listener("emulator-error", function (error) {
+        const detail = error && error.message ? error.message : String(error);
+        showError("The virtual computer failed to start: " + detail);
+      });
+
       machine.add_listener("download-error", function (details) {
         showError("A required emulator or Linux resource could not be downloaded: " +
           (details && details.file_name ? details.file_name : "unknown file") +
