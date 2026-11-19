@@ -1,0 +1,6 @@
+# Minimal interactive shells on the emulated VGA and serial consoles.
+::sysinit:/bin/sh /etc/webos/rcS
+tty1::respawn:/bin/sh -l
+ttyS0::respawn:/bin/sh -l
+::ctrlaltdel:/sbin/reboot
+::shutdown:/bin/umount -a -r
