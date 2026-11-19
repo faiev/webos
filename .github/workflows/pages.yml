@@ -104,7 +104,7 @@ jobs:
           cp "$BUILDROOT_OUT/target/bin/busybox" "$BUILD_CACHE/busybox"
           make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" BR2_EXTERNAL="$WEBOS_EXTERNAL" legal-info
           cp -R "$BUILDROOT_OUT/legal-info/." "$BUILD_CACHE/licenses/buildroot/"
-          printf '%s\\n' 'architecture=x86_64' 'buildroot=2026.08.2' 'kernel=6.18.7' > "$BUILD_CACHE/build-info.txt"
+          printf '%s\n' 'architecture=x86_64' 'buildroot=2026.08.2' 'kernel=6.18.7' > "$BUILD_CACHE/build-info.txt"
 
       - name: Verify cached x86-64 Linux build
         run: |
