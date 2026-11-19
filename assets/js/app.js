@@ -163,6 +163,8 @@
         wasm_path: asset("assets/v86/v86.wasm"),
         memory_size: 128 * 1024 * 1024,
         vga_memory_size: 8 * 1024 * 1024,
+        bios: { url: asset("assets/v86/bios/seabios.bin") },
+        vga_bios: { url: asset("assets/v86/bios/vgabios.bin") },
         bzimage: { url: asset("os/bzImage") },
         initrd: { url: asset("os/rootfs.cpio.gz") },
         cmdline: "console=tty0 console=ttyS0,115200n8 rdinit=/sbin/init loglevel=4",
