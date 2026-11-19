@@ -23,10 +23,19 @@ async function waitForGuestBoot(page, timeout) {
   try {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     const pageErrors = [];
+    const failedRequests = [];
+    const badResponses = [];
     page.on("pageerror", error => pageErrors.push(error.message));
+    page.on("requestfailed", request => failedRequests.push(request.url() + ": " + request.failure()?.errorText));
+    page.on("response", response => {
+      if (response.status() >= 400) {
+        badResponses.push(response.status() + " " + response.url());
+      }
+    });
 
     await page.goto("http://127.0.0.1:8765/", { waitUntil: "domcontentloaded" });
     await page.locator("#start-button").click();
+    await page.waitForFunction(() => typeof window.V86 === "function", null, { timeout: 10000 });
     await waitForGuestBoot(page, 240000);
 
     await page.locator("#pause-button").click();
@@ -46,6 +55,8 @@ async function waitForGuestBoot(page, timeout) {
     await page.locator("#restart-button").click();
     await waitForGuestBoot(page, 120000);
 
+    assert.deepEqual(failedRequests, [], "The WebOS page had failed network requests.");
+    assert.deepEqual(badResponses, [], "The WebOS page received HTTP error responses.");
     assert.deepEqual(pageErrors, [], "The WebOS page raised browser JavaScript errors.");
     console.log("PASS: v64 booted x86-64 Linux, userspace started, pause/resume worked, and restart booted again.");
   } finally {

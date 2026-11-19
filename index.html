@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111715">
-  <meta name="description" content="Boot a real minimal Linux system inside your browser with WebAssembly.">
+  <meta name="description" content="Boot a real 64-bit x86-64 Linux system inside your browser with WebAssembly.">
   <title>WebOS — Linux in your browser</title>
   <link rel="icon" href="./assets/icons/webos.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./assets/css/styles.css">
-  <script defer src="./assets/v86/libv86.js"></script>
+  <script defer src="./assets/v64/libv86.js"></script>
   <script defer src="./assets/js/app.js"></script>
 </head>
 <body>
@@ -34,7 +34,7 @@
               <span>Start WebOS</span>
               <span class="button-arrow" aria-hidden="true">↗</span>
             </button>
-            <span class="build-note">32-bit x86 · Buildroot · v86 / WASM</span>
+            <span class="build-note">64-bit x86-64 · Buildroot · v64 / WASM</span>
           </div>
           <p class="fine-print">The first launch downloads the emulator and Linux images. Keep this tab open while Linux boots.</p>
         </div>
@@ -47,7 +47,7 @@
             <div class="core-rule"></div>
             <div class="core-meta">KERNEL / WASM / BROWSER</div>
           </div>
-          <div class="visual-tag tag-top">i386</div>
+          <div class="visual-tag tag-top">x86-64</div>
           <div class="visual-tag tag-bottom">LOCAL EXECUTION</div>
           <div class="visual-cross cross-a">+</div>
           <div class="visual-cross cross-b">+</div>
@@ -99,8 +99,8 @@
         </div>
 
         <div class="workspace-footnote">
-          <span>Guest: Linux / i386</span>
-          <span>Emulation: v86 + WebAssembly</span>
+          <span>Guest: Linux / x86-64</span>
+          <span>Emulation: v64 + WebAssembly</span>
           <span>Storage: this browser only</span>
         </div>
         <p class="error-message" id="error-message" role="alert" hidden></p>
