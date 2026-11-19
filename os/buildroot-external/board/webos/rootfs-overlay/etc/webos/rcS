@@ -1,0 +1,22 @@
+#!/bin/sh
+
+mount -t proc proc /proc 2>/dev/null || true
+mount -t sysfs sysfs /sys 2>/dev/null || true
+mount -t devpts devpts /dev/pts 2>/dev/null || true
+mount -t tmpfs tmpfs /dev/shm 2>/dev/null || true
+
+hostname webos
+ip link set lo up 2>/dev/null || true
+
+echo ""
+echo "  _       __     __   ____  _____"
+echo " | |     / /__  / /  / __ \\/ ___/"
+echo " | | /| / / _ \\/ /  / / / /\\__ \\ "
+echo " | |/ |/ /  __/ /__/ /_/ /___/ /"
+echo " |__/|__/\\___/_____/\\____//____/"
+echo ""
+echo "Welcome to WebOS Linux."
+echo "A real Linux kernel running in your browser."
+echo ""
+echo "Type 'help' to see available BusyBox commands."
+echo "WEBOS_BOOT_COMPLETE"
