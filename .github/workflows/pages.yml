@@ -57,6 +57,8 @@ jobs:
           mkdir -p _site/assets/v86/bios
           cp vendor/v86/build/libv86.js _site/assets/v86/libv86.js
           cp vendor/v86/build/v86.wasm _site/assets/v86/v86.wasm
+          cp vendor/v86/bios/seabios.bin _site/assets/v86/bios/seabios.bin
+          cp vendor/v86/bios/vgabios.bin _site/assets/v86/bios/vgabios.bin
           cp vendor/v86/LICENSE _site/assets/v86/LICENSE
 
       - name: Download pinned Buildroot release
