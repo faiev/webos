@@ -25,7 +25,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential clang lld llvm make git curl wget \
-            xz-utils bc bison flex cpio rsync unzip file python3 perl \
+            xz-utils bc bison flex cpio rsync unzip file python3 perl gawk patch qemu-system-x86 \
             libncurses-dev libssl-dev libelf-dev
 
       - name: Set up Java
@@ -57,8 +57,6 @@ jobs:
           mkdir -p _site/assets/v86/bios
           cp vendor/v86/build/libv86.js _site/assets/v86/libv86.js
           cp vendor/v86/build/v86.wasm _site/assets/v86/v86.wasm
-          cp vendor/v86/bios/seabios.bin _site/assets/v86/bios/seabios.bin
-          cp vendor/v86/bios/vgabios.bin _site/assets/v86/bios/vgabios.bin
           cp vendor/v86/LICENSE _site/assets/v86/LICENSE
 
       - name: Download pinned Buildroot release
@@ -84,11 +82,40 @@ jobs:
           cp "$BUILDROOT_OUT/images/bzImage" _site/os/bzImage
           cp "$BUILDROOT_OUT/images/rootfs.cpio.gz" _site/os/rootfs.cpio.gz
 
+      - name: Boot-check Linux and BusyBox in QEMU
+        run: |
+          set +e
+          timeout --signal=TERM 45s qemu-system-i386 \
+            -machine pc -cpu pentiumpro -m 128M \
+            -kernel "$BUILDROOT_OUT/images/bzImage" \
+            -initrd "$BUILDROOT_OUT/images/rootfs.cpio.gz" \
+            -append "console=ttyS0,115200n8 rdinit=/sbin/init loglevel=4" \
+            -display none -serial stdio -monitor none -no-reboot \
+            > /tmp/webos-boot.log 2>&1
+          qemu_status=$?
+          set -e
+          if [ "$qemu_status" -ne 124 ] && [ "$qemu_status" -ne 0 ]; then
+            cat /tmp/webos-boot.log
+            exit "$qemu_status"
+          fi
+          if ! grep -Fq "WEBOS_BOOT_COMPLETE" /tmp/webos-boot.log; then
+            cat /tmp/webos-boot.log
+            echo "Linux did not reach the WebOS userspace boot marker."
+            exit 1
+          fi
+          echo "Verified: the Linux kernel booted and WebOS userspace started."
+
+      - name: Collect Buildroot legal information
+        run: |
+          make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" BR2_EXTERNAL="$WEBOS_EXTERNAL" legal-info
+          mkdir -p _site/licenses/buildroot
+          cp -R "$BUILDROOT_OUT/legal-info/." _site/licenses/buildroot/
+
       - name: Assemble static Pages site
         run: |
           cp index.html _site/index.html
           cp -R assets/css assets/js assets/icons _site/assets/
-          mkdir -p _site/docs _site/licenses
+          mkdir -p _site/docs
           cp docs/ARCHITECTURE.md _site/docs/ARCHITECTURE.md
           cp CREDITS.md _site/CREDITS.md
           printf '%s\n' \
