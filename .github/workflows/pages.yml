@@ -62,11 +62,13 @@ jobs:
           mkdir -p _site/assets/v64/bios
           cp vendor/v64/build/libv86.js _site/assets/v64/libv86.js
           cp vendor/v64/build/v86.wasm _site/assets/v64/v86.wasm
+          cp vendor/v64/build/cpu-worker.js _site/assets/v64/cpu-worker.js
           cp vendor/v64/bios/seabios.bin _site/assets/v64/bios/seabios.bin
           cp vendor/v64/bios/vgabios.bin _site/assets/v64/bios/vgabios.bin
           cp vendor/v64/LICENSE _site/assets/v64/LICENSE
           test -s _site/assets/v64/libv86.js
           test -s _site/assets/v64/v86.wasm
+          test -s _site/assets/v64/cpu-worker.js
 
       - name: Restore cached x86-64 Linux build
         id: linux-cache
@@ -202,6 +204,15 @@ jobs:
           done
           curl --fail --silent http://127.0.0.1:8765/ >/dev/null
           npm run test:browser
+
+      - name: Upload browser boot diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: webos-browser-diagnostics
+          path: browser-diagnostics/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload downloadable site artifact
         uses: actions/upload-artifact@v4
