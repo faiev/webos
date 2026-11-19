@@ -128,7 +128,7 @@ jobs:
           name: webos-linux-x86_64
           path: build-cache/linux/
           if-no-files-found: error
-          retention-days: 90
+          retention-days: 14
 
       - name: Boot-check x86-64 Linux and BusyBox in QEMU
         run: |
