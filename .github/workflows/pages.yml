@@ -1,0 +1,126 @@
+name: Build and deploy WebOS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out WebOS
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang lld llvm make git curl wget \
+            xz-utils bc bison flex cpio rsync unzip file python3 perl \
+            libncurses-dev libssl-dev libelf-dev
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Set up Rust and WebAssembly target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Check out pinned v86 source
+        uses: actions/checkout@v4
+        with:
+          repository: copy/v86
+          ref: 315b2b0b758703ef0e6cc7b4088d6068f83f3c20
+          path: vendor/v86
+
+      - name: Build v86 browser runtime
+        run: |
+          make -C vendor/v86 -j2 all
+          mkdir -p _site/assets/v86/bios
+          cp vendor/v86/build/libv86.js _site/assets/v86/libv86.js
+          cp vendor/v86/build/v86.wasm _site/assets/v86/v86.wasm
+          cp vendor/v86/bios/seabios.bin _site/assets/v86/bios/seabios.bin
+          cp vendor/v86/bios/vgabios.bin _site/assets/v86/bios/vgabios.bin
+          cp vendor/v86/LICENSE _site/assets/v86/LICENSE
+
+      - name: Download pinned Buildroot release
+        run: |
+          curl --fail --location --retry 3 \
+            https://buildroot.org/downloads/buildroot-2026.08.2.tar.xz \
+            --output /tmp/buildroot.tar.xz
+          mkdir -p /tmp/buildroot-src
+          tar -xJf /tmp/buildroot.tar.xz -C /tmp/buildroot-src --strip-components=1
+
+      - name: Configure and build WebOS Linux
+        env:
+          BUILDROOT_SRC: /tmp/buildroot-src
+          BUILDROOT_OUT: /tmp/buildroot-output
+          WEBOS_EXTERNAL: \${{ github.workspace }}/os/buildroot-external
+        run: |
+          make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" BR2_EXTERNAL="$WEBOS_EXTERNAL" webos_defconfig
+          make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" olddefconfig
+          make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" -j"$(nproc)"
+          test -s "$BUILDROOT_OUT/images/bzImage"
+          test -s "$BUILDROOT_OUT/images/rootfs.cpio.gz"
+          mkdir -p _site/os
+          cp "$BUILDROOT_OUT/images/bzImage" _site/os/bzImage
+          cp "$BUILDROOT_OUT/images/rootfs.cpio.gz" _site/os/rootfs.cpio.gz
+
+      - name: Assemble static Pages site
+        run: |
+          cp index.html _site/index.html
+          cp -R assets/css assets/js assets/icons _site/assets/
+          mkdir -p _site/docs _site/licenses
+          cp docs/ARCHITECTURE.md _site/docs/ARCHITECTURE.md
+          cp CREDITS.md _site/CREDITS.md
+          printf '%s\n' \
+            '{' \
+            '  "buildroot": "2026.08.2",' \
+            '  "v86Commit": "315b2b0b758703ef0e6cc7b4088d6068f83f3c20",' \
+            '  "architecture": "i386",' \
+            '  "kernel": "6.18.7"' \
+            '}' > _site/build-info.json
+          touch _site/.nojekyll
+          test -s _site/index.html
+          test -s _site/assets/v86/libv86.js
+          test -s _site/assets/v86/v86.wasm
+          test -s _site/os/bzImage
+          test -s _site/os/rootfs.cpio.gz
+          du -sh _site
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    environment:
+      name: github-pages
+      url: \${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
