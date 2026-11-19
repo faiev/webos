@@ -41,7 +41,7 @@ Generated binaries are intentionally not committed to the source tree. GitHub Ac
 4. Run the **Build and deploy WebOS** workflow, or push a commit to main.
 5. Open the Pages URL after the workflow completes successfully.
 
-The first build compiles v86 and Buildroot, so it takes longer than a normal static-site deployment. The workflow must complete successfully before the OS assets are available on Pages.
+The first build compiles v86 and Buildroot, so it takes longer than a normal static-site deployment. Before publishing, the workflow also boots the generated kernel and initramfs under QEMU and checks for the WebOS userspace boot marker. The workflow must complete successfully before the OS assets are available on Pages.
 
 ## Local development
 
