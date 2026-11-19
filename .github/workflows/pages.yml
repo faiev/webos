@@ -73,11 +73,11 @@ jobs:
         env:
           BUILDROOT_SRC: /tmp/buildroot-src
           BUILDROOT_OUT: /tmp/buildroot-output
-          WEBOS_EXTERNAL: \${{ github.workspace }}/os/buildroot-external
+          WEBOS_EXTERNAL: ${{ github.workspace }}/os/buildroot-external
         run: |
           make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" BR2_EXTERNAL="$WEBOS_EXTERNAL" webos_defconfig
-          make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" olddefconfig
-          make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" -j"$(nproc)"
+          make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" BR2_EXTERNAL="$WEBOS_EXTERNAL" olddefconfig
+          make -C "$BUILDROOT_SRC" O="$BUILDROOT_OUT" BR2_EXTERNAL="$WEBOS_EXTERNAL" -j"$(nproc)"
           test -s "$BUILDROOT_OUT/images/bzImage"
           test -s "$BUILDROOT_OUT/images/rootfs.cpio.gz"
           mkdir -p _site/os
@@ -106,6 +106,14 @@ jobs:
           test -s _site/os/rootfs.cpio.gz
           du -sh _site
 
+      - name: Upload downloadable site artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webos-pages
+          path: _site
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
@@ -117,7 +125,7 @@ jobs:
   deploy:
     environment:
       name: github-pages
-      url: \${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-24.04
     needs: build
     steps:
