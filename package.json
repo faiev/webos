@@ -1,0 +1,12 @@
+{
+  "name": "webos-browser-os",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A Linux virtual computer running in the browser through WebAssembly",
+  "scripts": {
+    "test:browser": "node tests/browser-smoke.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.65.1"
+  }
+}
