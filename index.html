@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111715">
+  <meta name="description" content="Boot a real minimal Linux system inside your browser with WebAssembly.">
+  <title>WebOS — Linux in your browser</title>
+  <link rel="icon" href="./assets/icons/webos.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./assets/css/styles.css">
+  <script defer src="./assets/v86/libv86.js"></script>
+  <script defer src="./assets/js/app.js"></script>
+</head>
+<body>
+  <div class="app-frame">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="WebOS home">
+        <span class="brand-mark">w</span>
+        <span class="brand-copy"><strong>webos</strong><small>LINUX IN YOUR BROWSER</small></span>
+      </a>
+      <div class="topbar-center"><span class="live-dot"></span><span>CLIENT-SIDE VIRTUAL MACHINE</span></div>
+      <a class="source-link" href="https://github.com/faiev/webos" target="_blank" rel="noreferrer">SOURCE CODE <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <main>
+      <section class="welcome" id="welcome">
+        <div class="welcome-copy">
+          <p class="eyebrow"><span class="eyebrow-line"></span> EXPERIMENTAL BROWSER OPERATING SYSTEM</p>
+          <h1>A Linux computer.<br><em>Inside this tab.</em></h1>
+          <p class="intro">WebOS boots a real Linux kernel in a virtual x86 machine powered by WebAssembly. No installer, no remote desktop, no separate machine.</p>
+          <div class="welcome-actions">
+            <button class="button button-primary" id="start-button" type="button">
+              <span class="button-icon" aria-hidden="true">▶</span>
+              <span>Start WebOS</span>
+              <span class="button-arrow" aria-hidden="true">↗</span>
+            </button>
+            <span class="build-note">32-bit x86 · Buildroot · v86 / WASM</span>
+          </div>
+          <p class="fine-print">The first launch downloads the emulator and Linux images. Keep this tab open while Linux boots.</p>
+        </div>
+        <div class="welcome-visual" aria-hidden="true">
+          <div class="orbit orbit-one"></div>
+          <div class="orbit orbit-two"></div>
+          <div class="visual-core">
+            <div class="core-top"><span></span><span></span><span></span></div>
+            <div class="core-word">web<span>os</span></div>
+            <div class="core-rule"></div>
+            <div class="core-meta">KERNEL / WASM / BROWSER</div>
+          </div>
+          <div class="visual-tag tag-top">i386</div>
+          <div class="visual-tag tag-bottom">LOCAL EXECUTION</div>
+          <div class="visual-cross cross-a">+</div>
+          <div class="visual-cross cross-b">+</div>
+        </div>
+      </section>
+
+      <section class="workspace" id="workspace" hidden aria-label="WebOS virtual computer">
+        <div class="workspace-heading">
+          <div>
+            <p class="eyebrow"><span class="eyebrow-line"></span> WEBOS / VIRTUAL MACHINE</p>
+            <h2>System console</h2>
+          </div>
+          <div class="system-readout">
+            <span class="status-indicator" id="status-indicator"></span>
+            <span id="state-label">INITIALIZING</span>
+          </div>
+        </div>
+
+        <section class="machine-window" id="machine-window" aria-label="Linux display">
+          <div class="window-bar">
+            <div class="window-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+            <div class="window-title">WEBOS <span>/</span> TTY1</div>
+            <div class="window-right" id="window-state">BOOT SEQUENCE</div>
+          </div>
+          <div class="display-frame" id="display-frame">
+            <div class="screen-container" id="screen-container" aria-label="Linux virtual screen">
+              <div class="vga-text" style="white-space: pre; font: 14px monospace; line-height: 14px"></div>
+              <canvas style="display: none"></canvas>
+            </div>
+            <div class="screen-wait" id="screen-wait">
+              <div class="loader-ring"></div>
+              <strong>Preparing virtual hardware</strong>
+              <span id="boot-message">Loading the WebAssembly emulator…</span>
+            </div>
+          </div>
+          <div class="window-footer">
+            <span class="footer-status"><i></i><span id="status-message">Waiting to start</span></span>
+            <span class="keyboard-hint">CLICK THE SCREEN TO CAPTURE KEYBOARD</span>
+          </div>
+        </section>
+
+        <div class="control-row" aria-label="Virtual machine controls">
+          <button class="control-button control-main" id="pause-button" type="button" disabled><span aria-hidden="true">Ⅱ</span> Pause</button>
+          <button class="control-button" id="restart-button" type="button" disabled><span aria-hidden="true">↻</span> Restart</button>
+          <span class="control-separator"></span>
+          <button class="control-button" id="save-button" type="button" disabled><span aria-hidden="true">▣</span> Save state</button>
+          <button class="control-button" id="restore-button" type="button" disabled><span aria-hidden="true">↥</span> Restore state</button>
+          <button class="control-button control-fullscreen" id="fullscreen-button" type="button" disabled><span aria-hidden="true">⛶</span> Fullscreen</button>
+        </div>
+
+        <div class="workspace-footnote">
+          <span>Guest: Linux / i386</span>
+          <span>Emulation: v86 + WebAssembly</span>
+          <span>Storage: this browser only</span>
+        </div>
+        <p class="error-message" id="error-message" role="alert" hidden></p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>WEBOS <span class="footer-muted">/ AN EXPERIMENT IN OPEN COMPUTING</span></span>
+      <span><a href="https://github.com/faiev/webos" target="_blank" rel="noreferrer">GITHUB</a><span class="footer-muted"> · STATIC HOSTING, LOCAL EXECUTION</span></span>
+    </footer>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
