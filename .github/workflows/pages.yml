@@ -133,6 +133,22 @@ jobs:
           test -s _site/os/rootfs.cpio.gz
           du -sh _site
 
+      - name: Test WebOS boot in headless Chromium
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+          python3 -m http.server 8765 --directory _site > /tmp/webos-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8765/ >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:8765/ >/dev/null
+          npm run test:browser
+
       - name: Upload downloadable site artifact
         uses: actions/upload-artifact@v4
         with:
